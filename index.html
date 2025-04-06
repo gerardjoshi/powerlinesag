@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Power Line Sag Simulation</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      font-family: sans-serif;
+    }
+    #three-canvas {
+      width: 100vw;
+      height: 100vh;
+      display: block;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 0;
+    }
+    #ui {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      width: 320px;
+      background: rgba(0, 0, 0, 0.8);
+      padding: 20px;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      border-top-left-radius: 12px;
+      z-index: 1;
+    }
+    label {
+      font-size: 13px;
+    }
+    input[type="range"] {
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="three-canvas"></canvas>
+  <div id="ui">
+    <label>Left Tower Height <input id="leftHeight" type="range" min="100" max="500" value="300"></label>
+    <label>Right Tower Height <input id="rightHeight" type="range" min="100" max="500" value="400"></label>
+    <label>Distance Between Towers <input id="distance" type="range" min="200" max="1000" value="600"></label>
+    <label>Tension <input id="tension" type="range" min="1000" max="20000" value="8000"></label>
+    <label>Wind Force <input id="wind" type="range" min="0" max="100" value="0"></label>
+    <label>Ice Thickness (mm) <input id="ice" type="range" min="0" max="200" value="0"></label>
+    <label>Weight per meter (kg) <input id="wm" type="range" min="0.1" max="15" value="1.5"></label>
+  </div>
+  <script type="module">
+    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js';
+
+    const canvas = document.getElementById('three-canvas');
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 8000);
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setClearColor(0x87CEEB); 
+    camera.position.set(0, 250, 600); // Zoomed out
+    camera.lookAt(0, 250, 0); // Straight view
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
+    scene.add(ambientLight);
+
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+    dirLight.position.set(300, 400, 200);
+    scene.add(dirLight);
+
+    // Ground
+    const groundGeo = new THREE.PlaneGeometry(4000, 4000);
+    const groundMat = new THREE.MeshStandardMaterial({ color: 0x668f55 });
+    const ground = new THREE.Mesh(groundGeo, groundMat);
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.y = 0;
+    scene.add(ground);
+
+    // Tower texture
+    const towerTex = new THREE.TextureLoader().load('https://threejsfundamentals.org/threejs/resources/images/wall.jpg');
+    const towerMaterial = new THREE.MeshStandardMaterial({ map: towerTex });
+    const towerGeometry = new THREE.BoxGeometry(10, 1, 10);
+
+    const leftTower = new THREE.Group();
+    const rightTower = new THREE.Group();
+    scene.add(leftTower, rightTower);
+
+    function createTower(group, height) {
+      group.clear();
+      for (let i = 0; i < height / 10; i++) {
+        const part = new THREE.Mesh(towerGeometry, towerMaterial);
+        part.position.y = i * 11;
+        group.add(part);
+      }
+    }
+
+    let wireLine;
+    let windPhase = 0;
+
+    function updateScene() {
+      const leftHeight = parseFloat(document.getElementById('leftHeight').value);
+      const rightHeight = parseFloat(document.getElementById('rightHeight').value);
+      const distance = parseFloat(document.getElementById('distance').value);
+      const tension = parseFloat(document.getElementById('tension').value);
+      const wind = parseFloat(document.getElementById('wind').value);
+      const ice = parseFloat(document.getElementById('ice').value);
+      const wm = parseFloat(document.getElementById('wm').value);
+
+      const span = distance;
+      const startX = -span / 2;
+      const endX = span / 2;
+
+      // Towers
+      createTower(leftTower, leftHeight);
+      createTower(rightTower, rightHeight);
+      leftTower.position.set(startX, 0, 0);
+      rightTower.position.set(endX, 0, 0);
+
+      // Sag calculation
+      let sag, sag1, sag2 = 0;
+    
+      
+      if (leftHeight == rightHeight){
+        const iceDensity = 0.9;
+      const wireRadius = 0.01;
+      const iceRadius = wireRadius + ice / 1000;
+      const wireArea = Math.PI * wireRadius ** 2;
+      const iceArea = Math.PI * iceRadius ** 2;
+      const totalMassPerMeter = ((iceArea - wireArea) * iceDensity) + wm;
+      const w = totalMassPerMeter ;
+      sag = (w * (span ** 2)) / (8 * tension); // made sag more visually sensitive to ice
+      }else{
+        const iceDensity = 0.9;
+      const wireRadius = 0.01;
+      const iceRadius = wireRadius + ice / 1000;
+      const wireArea = Math.PI * wireRadius ** 2;
+      const iceArea = Math.PI * iceRadius ** 2;
+      const totalMassPerMeter = ((iceArea - wireArea) * iceDensity) + wm;
+      const w = totalMassPerMeter ;
+      sag = (w * (span ** 2)) / (8 * tension); // made sag more visually sensitive to ice
+
+      }
+      
+
+      if (wireLine) scene.remove(wireLine);
+
+      const points = [];
+      const segments = 60; 
+      for (let i = 0; i <= segments; i++) {
+        const t = i / segments;
+        const x = startX + t * span;
+        const baseY = (1 - t) * leftHeight + t * rightHeight - 4 * sag * t * (1 - t);
+        const windOsc = wind * 0.5 * Math.sin(windPhase + t * 5);
+        const y = baseY;
+        const z = windOsc;
+        points.push(new THREE.Vector3(x, y, z));
+      }
+
+      const wireGeo = new THREE.BufferGeometry().setFromPoints(points);
+      const wireMat = new THREE.LineBasicMaterial({ color: 0xffff00 });
+      wireLine = new THREE.Line(wireGeo, wireMat);
+      scene.add(wireLine);
+    }
+   
+    function animate() {
+      windPhase += 0.05;
+      updateScene();
+      renderer.render(scene, camera);
+      requestAnimationFrame(animate);
+    }
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    document.querySelectorAll('input[type="range"]').forEach(slider => {
+      slider.addEventListener('input', updateScene);
+    });
+
+    updateScene();
+    animate();
+  </script>
+</body>
+</html>

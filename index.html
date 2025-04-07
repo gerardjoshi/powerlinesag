@@ -156,11 +156,7 @@
         rightTower.position.set(endX, 0, 0);
 
         // Sag calculation
-        let sag,
-          sag1,
-          sag2 = 0;
-        let x1,
-          x2 = 0;
+        let sag = 0;
 
         // split into cases of equal and unequal height --however this would work with just the unequal height logic too
 
@@ -175,6 +171,24 @@
             (1 / 2);
 
           sag = (w * span ** 2) / (8 * tension);
+          if (wireLine) scene.remove(wireLine);
+
+          const points = []; //creates the array for 3d coords for the wire structure
+          const segments = 600;
+          for (let i = 0; i <= segments; i++) {
+            const t = i / segments;
+            const x = startX + t * span;
+            const baseY =
+              (1 - t) * leftHeight + t * rightHeight - 4 * sag * t * (1 - t);
+            const windOsc = wind * 0.5 * Math.sin(windPhase + t * 5);
+            const y = baseY;
+            const z = windOsc;
+            points.push(new THREE.Vector3(x, y, z));
+          }
+          const wireGeo = new THREE.BufferGeometry().setFromPoints(points);
+          const wireMat = new THREE.LineBasicMaterial({ color: 0x000000 });
+          wireLine = new THREE.Line(wireGeo, wireMat);
+          scene.add(wireLine);
         } else {
           const iceDensity = 0.9;
           const wireRadius = 0.01;
@@ -184,29 +198,40 @@
           const w =
             (((iceArea - wireArea) * iceDensity + wm) ** 2 + wind ** 2) **
             (1 / 2);
+          let x1 =
+            span / 2 + (tension * (leftHeight - rightHeight)) / (w * span);
 
-          sag = (w * span ** 2) / (8 * tension); // made sag more visually sensitive to ice
+          let x2 =
+            span / 2 - (tension * (leftHeight - rightHeight)) / (w * span);
+
+          let s1 = (w * x1 ** 2) / (2 * tension);
+          let s2 = (w * x2 ** 2) / (2 * tension);
+
+          //sag = (w * span ** 2) / (8 * tension); // made sag more visually sensitive to ice
+          if (wireLine) scene.remove(wireLine);
+
+          const points = []; //creates the array for 3d coords for the wire structure
+          const segments = 600;
+          for (let i = 0; i <= segments; i++) {
+            const t = i / segments;
+            const x = startX + t * span;
+            let baseY = (x) => {
+              return (
+                (w * (x - (startX + x1)) ** 2) / (2 * tension) +
+                (leftHeight - s1)
+              );
+            };
+            //(1 - t) * leftHeight + t * rightHeight - 4 * sag * t * (1 - t);
+            const windOsc = wind * 0.5 * Math.sin(windPhase + t * 5);
+            let y = baseY(x);
+            const z = windOsc;
+            points.push(new THREE.Vector3(x, y, z));
+          }
+          const wireGeo = new THREE.BufferGeometry().setFromPoints(points);
+          const wireMat = new THREE.LineBasicMaterial({ color: 0x000000 });
+          wireLine = new THREE.Line(wireGeo, wireMat);
+          scene.add(wireLine);
         }
-
-        if (wireLine) scene.remove(wireLine);
-
-        const points = []; //creates the array for 3d coords for the wire structure
-        const segments = 60;
-        for (let i = 0; i <= segments; i++) {
-          const t = i / segments;
-          const x = startX + t * span;
-          const baseY =
-            (1 - t) * leftHeight + t * rightHeight - 4 * sag * t * (1 - t);
-          const windOsc = wind * 0.5 * Math.sin(windPhase + t * 5);
-          const y = baseY;
-          const z = windOsc;
-          points.push(new THREE.Vector3(x, y, z));
-        }
-
-        const wireGeo = new THREE.BufferGeometry().setFromPoints(points);
-        const wireMat = new THREE.LineBasicMaterial({ color: 0x000000 });
-        wireLine = new THREE.Line(wireGeo, wireMat);
-        scene.add(wireLine);
       }
 
       function animate() {

@@ -38,6 +38,7 @@
         border-top-left-radius: 12px;
         z-index: 1;
       }
+
       label {
         font-size: 13px;
       }
@@ -179,7 +180,9 @@
             const t = i / segments;
             const x = startX + t * span;
             const baseY =
-              (1 - t) * leftHeight + t * rightHeight - 4 * sag * t * (1 - t);
+              (w * (x - (startX + span / 2)) ** 2) / (2 * tension) +
+              (leftHeight - sag);
+            //(1 - t) * leftHeight + t * rightHeight - 4 * sag * t * (1 - t);
             const windOsc = wind * 0.5 * Math.sin(windPhase + t * 5);
             const y = baseY;
             const z = windOsc;

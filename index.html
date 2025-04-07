@@ -67,7 +67,7 @@
         <input id="tension" type="range" min="1000" max="20000" value="8000"
       /></label>
       <label
-        >Wind Force <input id="wind" type="range" min="0" max="10" value="0"
+        >Wind Force <input id="wind" type="range" min="0" max="70" value="0"
       /></label>
       <label
         >Ice Thickness (mm)
@@ -120,6 +120,61 @@
       const leftTower = new THREE.Group();
       const rightTower = new THREE.Group();
       scene.add(leftTower, rightTower);
+
+      //birb
+
+      // Cute bird made from basic shapes
+      const bird = new THREE.Group();
+
+      // Body
+      const body = new THREE.Mesh(
+        new THREE.SphereGeometry(3, 16, 16),
+        new THREE.MeshStandardMaterial({ color: 0xffcc66 }) // soft yellow
+      );
+      bird.add(body);
+
+      // Beak
+      const beak = new THREE.Mesh(
+        new THREE.ConeGeometry(0.7, 1.5, 8),
+        new THREE.MeshStandardMaterial({ color: 0xff9933 }) // orange beak
+      );
+      beak.rotation.x = Math.PI / 2;
+      beak.position.set(0, 0.5, 3.2);
+      bird.add(beak);
+
+      // Eyes
+      const eyeGeometry = new THREE.SphereGeometry(0.3, 8, 8);
+      const eyeMaterial = new THREE.MeshStandardMaterial({ color: 0x000000 });
+      const leftEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+      const rightEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+      leftEye.position.set(-1, 1.2, 2.5);
+      rightEye.position.set(1, 1.2, 2.5);
+      bird.add(leftEye, rightEye);
+
+      // Wings
+      const wingGeometry = new THREE.SphereGeometry(1.5, 12, 12);
+      const wingMaterial = new THREE.MeshStandardMaterial({ color: 0xffcc66 });
+      const leftWing = new THREE.Mesh(wingGeometry, wingMaterial);
+      const rightWing = new THREE.Mesh(wingGeometry, wingMaterial);
+      leftWing.scale.set(1, 0.5, 0.2);
+      rightWing.scale.set(1, 0.5, 0.2);
+      leftWing.position.set(-2.5, 0, 0);
+      rightWing.position.set(2.5, 0, 0);
+      bird.add(leftWing, rightWing);
+
+      // Tail
+      const tail = new THREE.Mesh(
+        new THREE.ConeGeometry(1, 2, 8),
+        new THREE.MeshStandardMaterial({ color: 0xffcc66 })
+      );
+      tail.rotation.z = Math.PI;
+      tail.rotation.x = -Math.PI / 6;
+      tail.position.set(0, 0, -3.5);
+      bird.add(tail);
+
+      bird.scale.set(3.7, 3.7, 3.7);
+
+      scene.add(bird);
 
       function createTower(group, height) {
         group.clear();
@@ -234,6 +289,28 @@
           const wireMat = new THREE.LineBasicMaterial({ color: 0x000000 });
           wireLine = new THREE.Line(wireGeo, wireMat);
           scene.add(wireLine);
+        }
+
+        // Bird follows the lowest point on the wire
+        if (wireLine) {
+          const positions = wireLine.geometry.attributes.position.array;
+          let lowestY = Infinity;
+          let lowestIndex = 0;
+
+          for (let i = 0; i < positions.length; i += 3) {
+            const y = positions[i + 1];
+            if (y < lowestY) {
+              lowestY = y;
+              lowestIndex = i;
+            }
+          }
+
+          const birdX = positions[lowestIndex];
+          const birdY = positions[lowestIndex + 1] + 5;
+          const birdZ = positions[lowestIndex + 2];
+          bird.position.set(birdX, birdY, birdZ);
+          const time = performance.now() * 0.001;
+          bird.rotation.y = Math.sin(time * 2) * 0.2; // it looks side-side
         }
       }
 

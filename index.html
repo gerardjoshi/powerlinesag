@@ -39,6 +39,38 @@
         z-index: 1;
       }
 
+      #output-panel {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 450px;
+        background: rgba(0, 0, 0, 0.8);
+        padding: 20px;
+        color: white;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        border-bottom-right-radius: 12px;
+        z-index: 1;
+        position: absolute;
+
+        font-size: 14px;
+      }
+
+      #output-panel label {
+        font-size: 13px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      #groundClearanceOutput {
+        width: 80px;
+        margin-left: 10px;
+        font-size: 13px;
+        text-align: right;
+      }
+
       label {
         font-size: 13px;
       }
@@ -49,34 +81,136 @@
   </head>
   <body>
     <canvas id="three-canvas"></canvas>
+    <div id="output-panel">
+      <strong>Outputs</strong>
+      <label>
+        Minimum Ground Clearance (m) =
+        <input id="groundClearanceOutput" type="text" readonly value="0" />
+      </label>
+      <label>
+        Minimum Ground Clearance located at (from left tower in m) =
+        <input id="distfromleft" type="text" readonly value="0" />
+      </label>
+      <label>
+        At this many meters from left tower =
+        <input id="whichdist" type="text" />
+      </label>
+      <label>
+        The ground clearance in meters is =
+        <input id="thisdist" type="text" readonly value="0" />
+      </label>
+    </div>
     <div id="ui">
-      <label
-        >Left Tower Height
-        <input id="leftHeight" type="range" min="100" max="500" value="300"
-      /></label>
-      <label
-        >Right Tower Height
-        <input id="rightHeight" type="range" min="100" max="500" value="400"
-      /></label>
-      <label
-        >Distance Between Towers
-        <input id="distance" type="range" min="200" max="1000" value="600"
-      /></label>
-      <label
-        >Tension
-        <input id="tension" type="range" min="1000" max="20000" value="8000"
-      /></label>
-      <label
-        >Wind Force <input id="wind" type="range" min="0" max="70" value="0"
-      /></label>
-      <label
-        >Ice Thickness (mm)
-        <input id="ice" type="range" min="0" max="200" value="0"
-      /></label>
-      <label
-        >Weight per meter (kg)
-        <input id="wm" type="range" min="0.1" max="15" value="1.5"
-      /></label>
+      <label>
+        Left Tower Height (m)
+        <div style="display: flex; gap: 10px; align-items: center">
+          <input id="leftHeight" type="range" min="5" max="500" value="30" />
+          <input
+            id="leftHeightBox"
+            type="number"
+            min="5"
+            max="500"
+            value="30"
+          />
+        </div>
+      </label>
+      <label>
+        Right Tower Height(m)
+        <div style="display: flex; gap: 10px; align-items: center">
+          <input id="rightHeight" type="range" min="5" max="500" value="400" />
+          <input
+            id="rightHeightBox"
+            type="number"
+            min="5"
+            max="500"
+            value="400"
+          />
+        </div>
+      </label>
+      <label>
+        Distance Between Towers (m)
+        <div style="display: flex; gap: 10px; align-items: center">
+          <input id="distance" type="range" min="5" max="1000" value="600" />
+          <input
+            id="distanceBox"
+            type="number"
+            min="5"
+            max="1000"
+            value="600"
+          />
+        </div>
+      </label>
+      <label>
+        Tension
+        <div style="display: flex; gap: 10px; align-items: center">
+          <input id="tension" type="range" min="100" max="20000" value="8000" />
+          <input
+            id="tensionBox"
+            type="number"
+            min="100"
+            max="20000"
+            value="8000"
+          />
+        </div>
+      </label>
+      <label>
+        <div style="display: flex; gap: 10px; align-items: center">
+          <div style="margin-bottom: 10px">
+            <label for="utsInput">Ultimate Tensile Strength:</label>
+            <input
+              type="number"
+              id="utsInput"
+              placeholder="Enter UTS"
+              step="any"
+              style="margin-right: 10px"
+            />
+            <br />
+
+            <label for="sfInput">Safety Factor:</label>
+            <input
+              type="number"
+              id="sfInput"
+              placeholder="Enter SF"
+              step="any"
+            />
+          </div>
+        </div>
+      </label>
+      <label>
+        Wind Force
+        <div style="display: flex; gap: 10px; align-items: center">
+          <input id="wind" type="range" min="0" max="70" value="0" />
+          <input id="windBox" type="number" min="0" max="70" value="0" />
+        </div>
+      </label>
+      <label>
+        Ice Thickness (mm)
+        <div style="display: flex; gap: 10px; align-items: center">
+          <input id="ice" type="range" min="0" max="200" value="0" />
+          <input id="iceBox" type="number" min="0" max="200" value="0" />
+        </div>
+      </label>
+      <label>
+        Weight per meter (kg)
+        <div style="display: flex; gap: 10px; align-items: center">
+          <input
+            id="wm"
+            type="range"
+            min="0.1"
+            max="15"
+            step="0.1"
+            value="1.5"
+          />
+          <input
+            id="wmBox"
+            type="number"
+            min="0.1"
+            max="15"
+            step="0.1"
+            value="1.5"
+          />
+        </div>
+      </label>
     </div>
     <script type="module">
       import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js";
@@ -176,11 +310,14 @@
 
       scene.add(bird);
 
+      const utsInput = document.getElementById("utsInput");
+      const sfInput = document.getElementById("sfInput");
+
       function createTower(group, height) {
         group.clear();
         for (let i = 0; i < height / 10; i++) {
           const part = new THREE.Mesh(towerGeometry, towerMaterial);
-          part.position.y = i * 11;
+          part.position.y = i * 10;
           group.add(part);
         }
       }
@@ -200,6 +337,9 @@
         const wind = parseFloat(document.getElementById("wind").value);
         const ice = parseFloat(document.getElementById("ice").value);
         const wm = parseFloat(document.getElementById("wm").value);
+        const whichdist = parseFloat(
+          document.getElementById("whichdist").value
+        );
 
         const span = distance;
         const startX = -span / 2;
@@ -217,7 +357,7 @@
         // split into cases of equal and unequal height --however this would work with just the unequal height logic too
 
         if (leftHeight == rightHeight) {
-          const iceDensity = 0.9;
+          const iceDensity = 917;
           const wireRadius = 0.01;
           const iceRadius = wireRadius + ice / 1000;
           const wireArea = Math.PI * wireRadius ** 2;
@@ -247,8 +387,14 @@
           const wireMat = new THREE.LineBasicMaterial({ color: 0x000000 });
           wireLine = new THREE.Line(wireGeo, wireMat);
           scene.add(wireLine);
+          document.getElementById("groundClearanceOutput").value =
+            leftHeight - sag;
+          document.getElementById("distfromleft").value = span / 2;
+          document.getElementById("thisdist").value =
+            (w * (span / 2 - whichdist) ** 2) / (2 * tension) +
+            (leftHeight - sag);
         } else {
-          const iceDensity = 0.9;
+          const iceDensity = 917;
           const wireRadius = 0.01;
           const iceRadius = wireRadius + ice / 1000;
           const wireArea = Math.PI * wireRadius ** 2;
@@ -289,6 +435,11 @@
           const wireMat = new THREE.LineBasicMaterial({ color: 0x000000 });
           wireLine = new THREE.Line(wireGeo, wireMat);
           scene.add(wireLine);
+          document.getElementById("groundClearanceOutput").value =
+            leftHeight - s1;
+          document.getElementById("distfromleft").value = x1;
+          document.getElementById("thisdist").value =
+            (w * (x1 - whichdist) ** 2) / (2 * tension) + (leftHeight - s1);
         }
 
         // Bird follows the lowest point on the wire
@@ -311,6 +462,7 @@
           bird.position.set(birdX, birdY, birdZ);
           const time = performance.now() * 0.001;
           bird.rotation.y = Math.sin(time * 2) * 0.2; // it looks side-side
+          bird.position.y += Math.sin(time * 3) * 0.1; // gentle bobbing
         }
       }
 
@@ -321,6 +473,60 @@
         requestAnimationFrame(animate);
       }
 
+      const syncPairs = [
+        ["leftHeight", "leftHeightBox"],
+        ["rightHeight", "rightHeightBox"],
+        ["distance", "distanceBox"],
+        ["tension", "tensionBox"],
+        ["wind", "windBox"],
+        ["ice", "iceBox"],
+        ["wm", "wmBox"],
+      ];
+
+      function clampAndSync(sliderId, boxId) {
+        const slider = document.getElementById(sliderId);
+        const box = document.getElementById(boxId);
+
+        // Sync from slider to box
+        slider.addEventListener("input", () => {
+          box.value = slider.value;
+          updateScene();
+        });
+
+        // Sync from box to slider with range validation
+        box.addEventListener("input", () => {
+          const min = parseFloat(box.min);
+          const max = parseFloat(box.max);
+          let val = parseFloat(box.value);
+
+          if (isNaN(val)) return; // Ignore blanks
+
+          if (val < min || val > max) {
+            console.alert(
+              `Value for ${boxId} must be between ${min} and ${max}`
+            );
+            box.value = slider.value;
+            return;
+          }
+
+          slider.value = val;
+          updateScene();
+        });
+      }
+
+      syncPairs.forEach(([sliderId, boxId]) => clampAndSync(sliderId, boxId));
+
+      // Ensure UI sliders still update scene directly
+      document.querySelectorAll('input[type="range"]').forEach((slider) => {
+        slider.addEventListener("input", updateScene);
+      });
+
+      window.addEventListener("resize", () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+
       window.addEventListener("resize", () => {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
@@ -330,6 +536,21 @@
       document.querySelectorAll('input[type="range"]').forEach((slider) => {
         slider.addEventListener("input", updateScene);
       });
+
+      function updateTensionFromSafetyInputs() {
+        const uts = parseFloat(utsInput.value);
+        const sf = parseFloat(sfInput.value);
+
+        if (!isNaN(uts) && !isNaN(sf) && sf !== 0) {
+          const calculatedTension = uts / sf;
+          document.getElementById("tension").value = calculatedTension;
+          document.getElementById("tension").dispatchEvent(new Event("input")); // trigger any input listeners
+        }
+      }
+
+      // Attach listeners to both inputs
+      utsInput.addEventListener("input", updateTensionFromSafetyInputs);
+      sfInput.addEventListener("input", updateTensionFromSafetyInputs);
 
       updateScene();
       animate();
